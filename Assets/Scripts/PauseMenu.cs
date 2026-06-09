@@ -44,4 +44,14 @@ public class GameManagerBehavior : MonoBehaviour
         Time.timeScale = 1f;
     }
 
+    public void MainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }
