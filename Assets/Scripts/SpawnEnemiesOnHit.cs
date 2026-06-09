@@ -6,15 +6,15 @@ public class SpawnEnemiesOnHit : MonoBehaviour
 
     [Header("Health")]
 
-    public int maxHealth = 3;
+    public int maxHealth = 1;
 
     [Header("Enemy Settings")]
 
     public GameObject enemyPrefab;
 
-    public int numberOfEnemies = 5;
+    public int numberOfEnemies = 1;
 
-    public float spawnRadius = 5f;
+    public float spawnRadius = 2f;
 
     private int currentHealth;
 
