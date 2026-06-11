@@ -21,6 +21,16 @@ public class SpawnGraveScript : MonoBehaviour
     [Tooltip("Extra local-space offset from the grave (applied after the forward distance).")]
     public Vector3 localOffset = Vector3.zero;
 
+    [Header("Layout Replication")]
+    [Tooltip("If true, treat the objects in 'sceneObjectsToCopy' as a layout group and spawn the whole layout at each grave.")]
+    public bool spawnLayoutAsGroup = false;
+
+    [Tooltip("Root Transform of the source layout in the scene. Positions/rotations of sceneObjectsToCopy are taken relative to this root.")]
+    public Transform layoutRoot;
+
+    [Tooltip("If true, preserve each layout object's rotation relative to the layout root when replicating at each grave. If false, spawned objects will align to the grave's forward.")]
+    public bool preserveLayoutRotation = true;
+
     [Header("Grave Lookup")]
     [Tooltip("If true the script will find graves by tag. Otherwise assign grave Transforms manually.")]
     public bool useTag = true;
@@ -43,7 +53,7 @@ public class SpawnGraveScript : MonoBehaviour
 
     // Keep references to spawned objects so we can remove them later if needed.
     private List<GameObject> _spawned = new List<GameObject>();
-    private GameObject _parentContainer;
+    private GameObject[] _parentContainers;
 
     void Start()
     {
@@ -68,6 +78,12 @@ public class SpawnGraveScript : MonoBehaviour
             return;
         }
 
+        if (spawnLayoutAsGroup && layoutRoot == null)
+        {
+            Debug.LogWarning("SpawnGraveScript: 'spawnLayoutAsGroup' is enabled but no 'layoutRoot' assigned.");
+            return;
+        }
+
         Transform[] graves = ResolveGraves();
         if (graves == null || graves.Length == 0)
         {
@@ -78,17 +94,85 @@ public class SpawnGraveScript : MonoBehaviour
         if (clearExistingBeforeSpawn)
             ClearSpawned();
 
-        // Create a parent container to keep hierarchy tidy
-        if (_parentContainer == null)
+
+        // If replicating a whole layout: for each grave spawn all sourceList items preserving their local positions relative to layoutRoot
+        if (spawnLayoutAsGroup)
         {
-            _parentContainer = new GameObject("SpawnedAtGraves");
-            _parentContainer.transform.SetParent(this.transform, false);
+            for (int gi = 0; gi < graves.Length; gi++)
+            {
+                var grave = graves[gi];
+                if (grave == null) continue;
+
+                GameObject _parentContainer = new GameObject("SpawnedLayout_" + grave.name);
+                _parentContainer.transform.SetParent(grave.transform, true);
+                _parentContainers[gi] = _parentContainer;
+
+                Vector3 forwardWorld = grave.TransformDirection(Vector3.forward);
+                Vector3 offsetWorld = grave.TransformDirection(localOffset);
+
+                for (int si = 0; si < sourceList.Length; si++)
+                {
+                    var source = sourceList[si];
+                    if (source == null) continue;
+
+                    // compute source local position relative to layoutRoot (world space -> layout local)
+                    Vector3 relativePos = layoutRoot.InverseTransformPoint(source.transform.position);
+                    Vector3 spawnPos = grave.TransformPoint(relativePos) + forwardWorld * distanceInFront + offsetWorld;
+
+                    // compute rotation relative to layoutRoot, then apply grave rotation
+                    Quaternion relativeRot = Quaternion.Inverse(layoutRoot.rotation) * source.transform.rotation;
+                    Quaternion spawnRot = preserveLayoutRotation ? (grave.rotation * relativeRot) : Quaternion.LookRotation(forwardWorld, grave.up);
+
+                    GameObject go = null;
+
+#if UNITY_EDITOR
+                    if (!Application.isPlaying && copySceneObjects)
+                    {
+                        if (PrefabUtility.IsPartOfPrefabAsset(source))
+                        {
+                            var obj = PrefabUtility.InstantiatePrefab(source) as GameObject;
+                            if (obj != null)
+                            {
+                                go = obj;
+                                go.transform.position = spawnPos;
+                                go.transform.rotation = spawnRot;
+                                go.transform.SetParent(_parentContainer.transform, true);
+                                Undo.RegisterCreatedObjectUndo(go, "Spawn layout copy at grave");
+                                EditorUtility.SetDirty(go);
+                            }
+                        }
+                        else
+                        {
+                            go = Object.Instantiate(source, spawnPos, spawnRot);
+                            go.transform.SetParent(_parentContainer.transform, true);
+                            Undo.RegisterCreatedObjectUndo(go, "Spawn layout copy at grave");
+                            EditorUtility.SetDirty(go);
+                        }
+                    }
+                    else
+#endif
+                    {
+                        go = Instantiate(source, spawnPos, spawnRot, _parentContainer.transform);
+                    }
+
+                    if (go == null) continue;
+                    go.name = source.name + "_at_" + grave.name;
+                    _spawned.Add(go);
+                }
+            }
+
+            return;
         }
 
+        // Default behavior: spawn one object per grave
         for (int i = 0; i < graves.Length; i++)
         {
             var grave = graves[i];
             if (grave == null) continue;
+
+            GameObject _parentContainer = new GameObject("SpawnedLayout_" + grave.name);
+            _parentContainer.transform.SetParent(grave.transform, true);
+            _parentContainers[i] = _parentContainer;
 
             // Compute spawn position: grave position + grave.forward * distance + local offset transformed into grave space
             Vector3 forwardWorld = grave.TransformDirection(Vector3.forward);
@@ -107,11 +191,9 @@ public class SpawnGraveScript : MonoBehaviour
 
             GameObject go = null;
 
-            // If copying scene objects in the Editor (not playing), create scene duplicates with Undo support.
 #if UNITY_EDITOR
             if (!Application.isPlaying && copySceneObjects)
             {
-                // If the source is a prefab asset, instantiate using PrefabUtility so prefab connection is preserved
                 if (PrefabUtility.IsPartOfPrefabAsset(source))
                 {
                     var obj = PrefabUtility.InstantiatePrefab(source) as GameObject;
@@ -167,23 +249,31 @@ public class SpawnGraveScript : MonoBehaviour
         }
         _spawned.Clear();
 
-        if (_parentContainer != null)
+        if (_parentContainers != null)
         {
-            // If parent container is empty, remove it
-            if (_parentContainer.transform.childCount == 0)
+            for (int i = 0; i < _parentContainers.Length; i++)
             {
+                var _parentContainer = _parentContainers[i];
+
+                if (_parentContainer != null)
+                {
+                    // If parent container is empty, remove it
+                    if (_parentContainer.transform.childCount == 0)
+                    {
 #if UNITY_EDITOR
-                if (!Application.isPlaying)
-                    Undo.DestroyObjectImmediate(_parentContainer);
-                else
-                    Destroy(_parentContainer);
+                        if (!Application.isPlaying)
+                            Undo.DestroyObjectImmediate(_parentContainer);
+                        else
+                            Destroy(_parentContainer);
 #else
                 Destroy(_parentContainer);
 #endif
-                _parentContainer = null;
+                        _parentContainer = null;
+                    }
+                }
             }
         }
-    }
+    }  
 
     private Transform[] ResolveGraves()
     {
@@ -192,6 +282,12 @@ public class SpawnGraveScript : MonoBehaviour
             var gos = GameObject.FindGameObjectsWithTag(graveTag);
             Transform[] result = new Transform[gos.Length];
             for (int i = 0; i < gos.Length; i++) result[i] = gos[i].transform;
+
+            if (_parentContainers == null || _parentContainers.Length != result.Length)
+            {
+                _parentContainers = new GameObject[result.Length];
+            }
+
             return result;
         }
         else
