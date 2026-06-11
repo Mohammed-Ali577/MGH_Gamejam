@@ -19,11 +19,17 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundMask;
 
+    [Header("Health")]
+    [SerializeField] private int maxHealth = 3;
+
     private Rigidbody _rb;
     private Vector3 _moveInput;
     private bool _jumpRequested;
     private bool _isGrounded;
     private float _pitch; // vertical look
+
+    private int _currentHealth;
+    private bool _isDead;
 
     void Start()
     {
@@ -43,10 +49,16 @@ public class PlayerScript : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+
+        _currentHealth = Mathf.Max(1, maxHealth);
+        _isDead = false;
     }
 
     void Update()
     {
+        if (_isDead)
+            return;
+
         // Mouse look
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime * (invertY ? 1f : -1f);
@@ -80,6 +92,9 @@ public class PlayerScript : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (_isDead)
+            return;
+
         // Convert input to world space based on player orientation
         Vector3 worldMove = transform.TransformDirection(_moveInput) * moveSpeed;
 
@@ -97,6 +112,43 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    // Public API for health
+    public void TakeDamage(int amount = 1)
+    {
+        if (_isDead)
+            return;
+
+        _currentHealth -= Mathf.Max(0, amount);
+        _currentHealth = Mathf.Clamp(_currentHealth, 0, maxHealth);
+
+        if (_currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        if (_isDead)
+            return;
+
+        _isDead = true;
+
+        // Stop physics motion and prevent further input
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.isKinematic = true;
+        }
+
+        // unlock cursor so user can interact with UI after death
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // disable this component so no further input is processed
+        enabled = false;
+    }
+
     // Optional: visualize ground check sphere in the editor
     void OnDrawGizmosSelected()
     {
@@ -106,4 +158,7 @@ public class PlayerScript : MonoBehaviour
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
     }
+
+    // Read-only current health
+    public int CurrentHealth => _currentHealth;
 }
