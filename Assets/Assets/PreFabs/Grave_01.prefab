@@ -239,7 +239,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a60c4d191bec1564bb27868575a02b5f, type: 2}
+  - {fileID: 2100000, guid: fcce24ac75cfdf0499dc0126645a1717, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -274,7 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 2
-  enemyPrefab: {fileID: 919132149155446097, guid: 5d2833c875d14f9459c2104a892130f7, type: 3}
+  enemyPrefab: {fileID: 919132149155446097, guid: 54b472f4f7d445442988b04c4d94c66d, type: 3}
   numberOfEnemies: 1
   spawnRadius: 20
   delayBetweenSpawns: 2
