@@ -183,6 +183,8 @@ GameObject:
   - component: {fileID: 1802841698332015227}
   - component: {fileID: 7969831254721628252}
   - component: {fileID: 7462731456178604179}
+  - component: {fileID: 3555207597594787290}
+  - component: {fileID: 2044002378498322115}
   m_Layer: 0
   m_Name: default
   m_TagString: Grave
@@ -259,6 +261,52 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3555207597594787290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3055825958058613265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ecb59c088036524bb63130919ec694b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 2
+  enemyPrefab: {fileID: 919132149155446097, guid: 5d2833c875d14f9459c2104a892130f7, type: 3}
+  numberOfEnemies: 1
+  spawnRadius: 20
+  delayBetweenSpawns: 2
+  spawnOnObjectClick: 1
+  spawnOnScreenClick: 0
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  destroyAfterSpawn: 0
+  limitToOneSpawnPerObject: 1
+  spawnChanceDenominator: 6
+--- !u!65 &2044002378498322115
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3055825958058613265}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.380006, y: 1.306462, z: 0.737924}
+  m_Center: {x: 0, y: 0.107548, z: 0.06049399}
 --- !u!1 &3231294076404062916
 GameObject:
   m_ObjectHideFlags: 0
@@ -736,10 +784,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1151177482800142729}
-  - component: {fileID: 6439776686559899244}
   m_Layer: 0
   m_Name: Grave_01
-  m_TagString: Grave
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -760,39 +807,3 @@ Transform:
   - {fileID: 1802841698332015227}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
---- !u!114 &6439776686559899244
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8925189965694376280}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40c8606c7be3b5d43a338e1e09d4ef62, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  prefabsToSpawn:
-  - {fileID: 4372789550383393143, guid: 1e816517532edaf4899eaa5f390714f3, type: 3}
-  - {fileID: 6163258396000300421, guid: a7adf88895ba66a449f5e503e5ab920d, type: 3}
-  - {fileID: 2807074059043106792, guid: 7cd315d7a2e23384784fa3ec83ad83c7, type: 3}
-  - {fileID: 5138985327477625303, guid: 630d74c0b4f7cfd4bb8aed86b29b8178, type: 3}
-  - {fileID: 7412797624308337023, guid: 497f83e855443984883a731c2cc9ffed, type: 3}
-  - {fileID: 2024172786610325330, guid: a40237c35aedc8a4385e54d94213ae8d, type: 3}
-  - {fileID: 3641513087930247108, guid: d4fe55af36fcf824098a84352483a669, type: 3}
-  - {fileID: 4252298313156112181, guid: 9c6c4f2d9c54dc0478e6da8434b00337, type: 3}
-  - {fileID: 3641513087930247108, guid: d4fe55af36fcf824098a84352483a669, type: 3}
-  sceneObjectsToCopy:
-  - {fileID: 0}
-  copySceneObjects: 1
-  distanceInFront: 1
-  localOffset: {x: 0, y: 0, z: 0}
-  spawnLayoutAsGroup: 1
-  layoutRoot: {fileID: 531577479478103299, guid: 7d9856241cd69ef46b75016713e98196, type: 3}
-  preserveLayoutRotation: 1
-  useTag: 1
-  graveTag: Grave
-  manualGraves: []
-  spawnOnStart: 1
-  clearExistingBeforeSpawn: 1
-  randomizePerGrave: 1
