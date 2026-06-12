@@ -6,12 +6,13 @@ public class AudioManager : MonoBehaviour
     [SerializeField] AudioSource musicSource;
     [SerializeField] AudioSource SFXSource;
 
+
     [Header ("---------- Audio Source ----------")]
     public AudioClip background;
     public AudioClip GameOver;
     public AudioClip Click;
 
-    private vid Start()
+    private void Start()
     {
         musicSource.clip = background;
         musicSource.Play();
