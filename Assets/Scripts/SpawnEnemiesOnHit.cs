@@ -1,4 +1,3 @@
-
 using System.Collections;
 using UnityEngine;
 
@@ -163,10 +162,17 @@ public class EnemySpawner : MonoBehaviour
             firstAttemptFailed = true;
             failedClickCount = 0;
             coloredAfterFail = false;
+
+            // Award points for no-spawn case
+            ScoreManager.AddPoints(2);
+
             return 0;
         }
 
         // Roll succeeded: compute spawn center/topY and start spawn routine; hide this object
+        // Deduct points for spawn case
+        ScoreManager.AddPoints(-2);
+
         Collider col = referenceCollider ?? GetComponent<Collider>();
         Vector3 center;
         float topY;
@@ -224,6 +230,9 @@ public class EnemySpawner : MonoBehaviour
         // Hide the clicked/hit object immediately (disable renderers & colliders) so it appears gone while spawn happens
         HideGameObject(gameObject);
 
+        // Deduct points because this destruction triggers a spawn
+        ScoreManager.AddPoints(-2);
+
         // This destruction should apply to the object that took damage and triggered the spawn
         StartCoroutine(SpawnRoutine(center, topY, true));
     }
@@ -279,7 +288,7 @@ public class EnemySpawner : MonoBehaviour
             Vector3.left     // West  (-X)
         };
 
-        Vector3 dir = compass[index % compass.Length];
+        Vector3 dir = compass[Mathf.Abs(index) % compass.Length];
         Vector3 basePos = center + dir * spawnRadius;
 
         if (clickedTopY.HasValue)
