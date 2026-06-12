@@ -33,6 +33,10 @@ public class EnemySpawner : MonoBehaviour
 
     [Header("Behavior")]
     public bool destroyAfterSpawn = false;
+    [Tooltip("Color to apply when a grave failed to spawn and the required number of subsequent clicks has been reached.")]
+    public Color failedClickColor = Color.red;
+    [Tooltip("How many clicks after a failed first-attempt are required before applying the failedClickColor.")]
+    public int clicksToChangeColor = 2;
 
     [Header("Limit")]
     [Tooltip("If true, this instance will only allow a single spawn for this object.")]
@@ -48,6 +52,10 @@ public class EnemySpawner : MonoBehaviour
     // Tracks whether the first-hit spawn attempt has already been performed and whether it failed.
     private bool attemptedFirstHitSpawn = false;
     private bool firstAttemptFailed = false;
+
+    // Count clicks after a failed first attempt
+    private int failedClickCount = 0;
+    private bool coloredAfterFail = false;
 
     private bool isSpawning = false;
     private int currentHealth;
@@ -66,19 +74,29 @@ public class EnemySpawner : MonoBehaviour
             if (TryGetMouseWorldPosition(out spawnCenter))
             {
                 // screen click uses ground ray so no clicked collider/topY to clamp against
-                StartCoroutine(SpawnRoutine(spawnCenter, null));
+                // screen-click should NOT destroy this spawner object, so pass destroyThis = false
+                StartCoroutine(SpawnRoutine(spawnCenter, null, false));
             }
         }
     }
 
-    // Click handling: if first attempt failed, clicking does nothing.
+    // Click handling: if first attempt failed, clicking increments a counter and when it reaches clicksToChangeColor the object changes color.
     // Otherwise process the first-hit spawn attempt (or subsequent damage behavior).
     private void OnMouseDown()
     {
         if (!spawnOnObjectClick || isSpawning) return;
 
-        // If the first-hit attempt already failed, clicking again does nothing.
-        if (attemptedFirstHitSpawn && firstAttemptFailed) return;
+        // If the first-hit attempt already failed, count clicks and apply color when threshold is reached.
+        if (attemptedFirstHitSpawn && firstAttemptFailed)
+        {
+            failedClickCount++;
+            if (!coloredAfterFail && failedClickCount >= Mathf.Max(1, clicksToChangeColor))
+            {
+                ApplyFailedClickColor();
+                coloredAfterFail = true;
+            }
+            return;
+        }
 
         Camera cam = Camera.main;
         if (cam == null)
@@ -107,7 +125,7 @@ public class EnemySpawner : MonoBehaviour
     }
 
     // Collision handling: on first collision attempt the 1-in-N spawn; afterwards apply standard damage.
-    // Note: collisions still apply normal damage after the first-attempt; only clicking is disabled after a failed first attempt.
+    // Note: collisions still apply normal damage after the first-attempt; only clicking is modified after a failed first attempt.
     private void OnCollisionEnter(Collision collision)
     {
         if (!collision.gameObject.CompareTag("Projectile")) return;
@@ -128,7 +146,7 @@ public class EnemySpawner : MonoBehaviour
     /// Attempts the first-hit spawn.
     /// Returns:
     ///   1 => spawn succeeded and was started,
-    ///   0 => this was the first attempt and it failed (object stays; clicking further will do nothing),
+    ///   0 => this was the first attempt and it failed (object stays; subsequent clicks will count toward color change),
     ///  -1 => first-attempt was already used previously (caller should apply normal damage).
     /// </summary>
     private int TryHandleFirstHitSpawn(Vector3 hitPoint, Collider referenceCollider)
@@ -141,8 +159,10 @@ public class EnemySpawner : MonoBehaviour
         bool rollSucceeds = Random.Range(0, spawnChanceDenominator) == 0;
         if (!rollSucceeds)
         {
-            // First-hit roll failed: mark failure so clicks do nothing going forward.
+            // First-hit roll failed: mark failure so clicks will be counted going forward.
             firstAttemptFailed = true;
+            failedClickCount = 0;
+            coloredAfterFail = false;
             return 0;
         }
 
@@ -163,8 +183,10 @@ public class EnemySpawner : MonoBehaviour
             topY = transform.position.y;
         }
 
+        // hide visuals/colliders immediately so the object appears gone
         HideGameObject(gameObject);
-        StartCoroutine(SpawnRoutine(center, topY));
+        // spawn was triggered by this object — destroy it after spawn completes, so pass destroyThis = true
+        StartCoroutine(SpawnRoutine(center, topY, true));
         return 1;
     }
 
@@ -202,10 +224,11 @@ public class EnemySpawner : MonoBehaviour
         // Hide the clicked/hit object immediately (disable renderers & colliders) so it appears gone while spawn happens
         HideGameObject(gameObject);
 
-        StartCoroutine(SpawnRoutine(center, topY));
+        // This destruction should apply to the object that took damage and triggered the spawn
+        StartCoroutine(SpawnRoutine(center, topY, true));
     }
 
-    private IEnumerator SpawnRoutine(Vector3 center, float? clickedTopY = null)
+    private IEnumerator SpawnRoutine(Vector3 center, float? clickedTopY = null, bool destroyThis = false)
     {
         if (enemyPrefab == null)
         {
@@ -235,7 +258,8 @@ public class EnemySpawner : MonoBehaviour
 
         isSpawning = false;
 
-        if (destroyAfterSpawn)
+        // Destroy this object if requested, or if the global destroyAfterSpawn flag is set.
+        if (destroyThis || destroyAfterSpawn)
             Destroy(gameObject);
     }
 
@@ -309,5 +333,25 @@ public class EnemySpawner : MonoBehaviour
         // Optionally disable any lights so they don't remain visible
         Light[] lights = target.GetComponentsInChildren<Light>(true);
         foreach (var l in lights) l.enabled = false;
+    }
+
+    // Apply the configured failed-click color to all renderers on this object (called when the post-fail click threshold is reached).
+    private void ApplyFailedClickColor()
+    {
+        Renderer[] rends = GetComponentsInChildren<Renderer>(true);
+        foreach (var r in rends)
+        {
+            if (r == null) continue;
+            try
+            {
+                var mat = r.material;
+                if (mat != null && mat.HasProperty("_Color"))
+                    mat.color = failedClickColor;
+            }
+            catch
+            {
+                // ignore material instancing errors
+            }
+        }
     }
 }
