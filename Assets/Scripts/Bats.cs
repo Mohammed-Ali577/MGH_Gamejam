@@ -1,0 +1,178 @@
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody))
+]
+public class Bat : MonoBehaviour
+{
+    [Header("Movement")]
+    public float speed = 4f;
+    public float turnSpeed = 3f;
+    [Tooltip("Distance from home center bats will roam within.")]
+    public float wanderRadius = 6f;
+    [Tooltip("Min/max flight height relative to home center Y.")]
+    public Vector2 heightRange = new Vector2(1f, 4f);
+    [Tooltip("Seconds between forced target changes.")]
+    public float changeTargetInterval = 3f;
+    [Tooltip("Distance to target at which a new target is chosen.")]
+    public float targetReachThreshold = 0.75f;
+
+    [Header("Constraints")]
+    [Tooltip("Minimum world Y the bats should stay above.")]
+    public float minFlightHeight = 1f;
+
+    [Header("Audio / Wing Flap")]
+    public AudioClip wingFlapClip;
+    [Tooltip("Volume for PlayOneShot")]
+    [Range(0f, 1f)]
+    public float wingVolume = 0.7f;
+    [Tooltip("Interval range (seconds) between wing flap sounds")]
+    public Vector2 flapIntervalRange = new Vector2(0.12f, 0.28f);
+    [Tooltip("Random pitch variance applied to the audio source")]
+    public Vector2 pitchRange = new Vector2(0.95f, 1.05f);
+
+    private Rigidbody rb;
+    private Vector3 homeCenter;
+    private Vector3 target;
+    private float changeTimer;
+
+    // Audio
+    private AudioSource audioSource;
+    private float flapTimer;
+
+    // Optional: call from spawner to set where this bat should consider "home"
+    public void Initialize(Vector3 home)
+    {
+        homeCenter = home;
+        // make sure home center respects min flight height so relative heights are above constraint
+        homeCenter.y = Mathf.Max(homeCenter.y, minFlightHeight);
+        PickNewTarget();
+    }
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.useGravity = false;
+        rb.constraints = RigidbodyConstraints.FreezeRotation; // we control rotation
+
+        // Ensure an AudioSource exists
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 1f; // 3D sound
+        }
+
+        // initialize flap timer
+        flapTimer = Random.Range(flapIntervalRange.x, flapIntervalRange.y);
+    }
+
+    private void Start()
+    {
+        // If spawner didn't initialize home, use current position as center.
+        if (homeCenter == Vector3.zero)
+            homeCenter = transform.position;
+
+        // ensure home center meets minimum height constraint
+        homeCenter.y = Mathf.Max(homeCenter.y, minFlightHeight);
+
+        // ensure current position is not below min height
+        if (transform.position.y < minFlightHeight)
+        {
+            Vector3 p = transform.position;
+            p.y = minFlightHeight;
+            transform.position = p;
+        }
+
+        PickNewTarget();
+    }
+
+    private void Update()
+    {
+        changeTimer += Time.deltaTime;
+        if (changeTimer >= changeTargetInterval)
+        {
+            PickNewTarget();
+        }
+
+        // Wing flap audio timing
+        if (wingFlapClip != null && audioSource != null)
+        {
+            flapTimer -= Time.deltaTime;
+            if (flapTimer <= 0f)
+            {
+                audioSource.pitch = Random.Range(pitchRange.x, pitchRange.y);
+                audioSource.PlayOneShot(wingFlapClip, wingVolume);
+                flapTimer = Random.Range(flapIntervalRange.x, flapIntervalRange.y);
+            }
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        // Wander behavior target vector
+        Vector3 toTarget = target - transform.position;
+        float dist = toTarget.magnitude;
+        if (dist <= targetReachThreshold)
+        {
+            PickNewTarget();
+            toTarget = target - transform.position;
+        }
+
+        if (toTarget.sqrMagnitude > 0.001f)
+            toTarget.Normalize();
+        else
+            toTarget = transform.forward;
+
+        // If we're below the minimum flight height, bias desired direction upward
+        Vector3 desired = toTarget;
+        if (transform.position.y < minFlightHeight)
+        {
+            // add an upward component proportional to how far below the minimum we are
+            float deficit = minFlightHeight - transform.position.y;
+            desired.y = Mathf.Abs(desired.y) + Mathf.Max(0.5f, deficit);
+        }
+        else
+        {
+            // keep a small vertical stability so bats don't dive too low
+            desired.y = Mathf.Clamp(desired.y, -0.2f, 1f);
+        }
+
+        // Smooth rotation towards desired direction (preserve Y-up)
+        Quaternion desiredRot = Quaternion.LookRotation(desired.normalized, Vector3.up);
+        transform.rotation = Quaternion.Slerp(transform.rotation, desiredRot, turnSpeed * Time.fixedDeltaTime);
+
+        // Forward velocity
+        rb.linearVelocity = transform.forward * speed;
+
+        // Safety clamp: if physics pushed the bat below min height, correct position slightly
+        if (transform.position.y < minFlightHeight - 0.25f)
+        {
+            Vector3 p = transform.position;
+            p.y = Mathf.Lerp(p.y, minFlightHeight, 0.5f);
+            rb.position = p;
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, Mathf.Abs(rb.linearVelocity.y) + 1f, rb.linearVelocity.z);
+        }
+    }
+
+    private void PickNewTarget()
+    {
+        changeTimer = 0f;
+
+        // Random point inside circle on XZ around home center, random height in range
+        Vector2 circle = Random.insideUnitCircle * wanderRadius;
+        float y = homeCenter.y + Random.Range(heightRange.x, heightRange.y);
+
+        // enforce minimum flight height
+        y = Mathf.Max(y, minFlightHeight);
+
+        target = new Vector3(homeCenter.x + circle.x, y, homeCenter.z + circle.y);
+    }
+
+    // Optional: simple collision response so bats don't get stuck
+    private void OnCollisionEnter(Collision collision)
+    {
+        // bump to a new target if hitting something
+        PickNewTarget();
+    }
+}
