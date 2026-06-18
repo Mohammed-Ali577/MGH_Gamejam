@@ -127,6 +127,6 @@ MonoBehaviour:
   targetReachThreshold: 0.75
   minFlightHeight: 14
   wingFlapClip: {fileID: 8300000, guid: e11df97f803a85f46b7a01bcd8ccf78e, type: 3}
-  wingVolume: 0.3
+  wingVolume: 0.255
   flapIntervalRange: {x: 0.12, y: 0.28}
   pitchRange: {x: 0.95, y: 1.05}
