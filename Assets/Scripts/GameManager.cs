@@ -44,6 +44,10 @@ public class GameManager : MonoBehaviour
     [Tooltip("Runtime scene name to load for GameOver screen (auto-filled from the GameOver Scene Asset in Editor).")]
     public string gameOverSceneName = "";
 
+    [Header("Win by Score")]
+    [Tooltip("Total score required to trigger a win.")]
+    public int winScore = 80;
+
     public int totalSpawned { get; private set; } = 0;
     public bool GameOver { get; private set; } = false;
 
@@ -91,6 +95,15 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Subscribe to score changes to detect win-by-score
+        ScoreManager.OnScoreChanged += HandleScoreChanged;
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe to avoid leaks when object is destroyed
+        ScoreManager.OnScoreChanged -= HandleScoreChanged;
     }
 
     /// <summary>
@@ -107,12 +120,23 @@ public class GameManager : MonoBehaviour
             EndGame();
     }
 
+    private void HandleScoreChanged(int newScore)
+    {
+        if (GameOver) return;
+
+        if (newScore >= winScore)
+        {
+            Debug.Log($"GameManager: Score reached {newScore} (>= {winScore}) — You win!");
+            EndGame();
+        }
+    }
+
     private void EndGame()
     {
         if (GameOver) return;
         GameOver = true;
 
-        Debug.Log("GameManager: Spawn limit reached — Game Over.");
+        Debug.Log("GameManager: EndGame triggered.");
 
         OnGameEnd?.Invoke();
 

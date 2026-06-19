@@ -91,9 +91,18 @@ public class Bat : MonoBehaviour
             {
                 speedHash = -1;
 #if UNITY_EDITOR
-                Debug.LogWarning($"Bat: Animator on '{gameObject.name}' does not have a 'Speed' parameter. Animation updates will be skipped.");
+                Debug.LogWarning($"Bat: Animator on '{gameObject.name}' does not have a 'Speed' parameter. Animation parameter updates will be skipped.");
 #else
                 Debug.Log($"Bat: Animator missing 'Speed' parameter on {gameObject.name}.");
+#endif
+            }
+
+            if (animator.runtimeAnimatorController == null)
+            {
+#if UNITY_EDITOR
+                Debug.LogWarning($"Bat: Animator on '{gameObject.name}' has no RuntimeAnimatorController assigned.");
+#else
+                Debug.Log($"Bat: Animator missing controller on {gameObject.name}.");
 #endif
             }
         }
@@ -127,6 +136,50 @@ public class Bat : MonoBehaviour
         }
 
         PickNewTarget();
+
+        // Attempt to play a fallback clip if the controller contains a matching clip name.
+        // Prefer common names used by the editor helper or your assets.
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            var clips = animator.runtimeAnimatorController.animationClips;
+            // accept any of these common names if present
+            string[] preferredNames = new[] { "Fast_Flying", "Bat_Fly", "Fly", "Bat_Flying", "Bat_Fly_Loop" };
+            string found = null;
+            foreach (var clip in clips)
+            {
+                if (clip == null) continue;
+                foreach (var n in preferredNames)
+                {
+                    if (clip.name == n)
+                    {
+                        found = clip.name;
+                        break;
+                    }
+                }
+                if (found != null) break;
+            }
+
+            if (found != null)
+            {
+                // Play on base layer (0).
+                animator.Play(found, 0, 0f);
+            }
+            else
+            {
+                // If Speed parameter exists, we will drive transitions via SetFloat; otherwise log state.
+                if (speedHash == -1)
+                {
+#if UNITY_EDITOR
+                    Debug.LogWarning($"Bat: Animator on '{gameObject.name}' has controller but no preferred clip found and no 'Speed' parameter. Assign a controller with a 'Speed' parameter or a named clip/state.");
+#else
+                    Debug.Log($"Bat: Animator missing setup on {gameObject.name}.");
+#endif
+                }
+            }
+        }
     }
 
     private void Update()
