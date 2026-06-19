@@ -1,7 +1,6 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))
-]
+[RequireComponent(typeof(Rigidbody))]
 public class Bat : MonoBehaviour
 {
     [Header("Movement")]
@@ -30,6 +29,10 @@ public class Bat : MonoBehaviour
     [Tooltip("Random pitch variance applied to the audio source")]
     public Vector2 pitchRange = new Vector2(0.95f, 1.05f);
 
+    [Header("Animation")]
+    [Tooltip("Optional: Animator on the bat or a child. Animator should expose a float parameter named 'Speed' to control flying.")]
+    public Animator animator;
+
     private Rigidbody rb;
     private Vector3 homeCenter;
     private Vector3 target;
@@ -38,6 +41,9 @@ public class Bat : MonoBehaviour
     // Audio
     private AudioSource audioSource;
     private float flapTimer;
+
+    // Animator hashes (-1 means unavailable)
+    private int speedHash = -1;
 
     // Optional: call from spawner to set where this bat should consider "home"
     public void Initialize(Vector3 home)
@@ -65,6 +71,42 @@ public class Bat : MonoBehaviour
 
         // initialize flap timer
         flapTimer = Random.Range(flapIntervalRange.x, flapIntervalRange.y);
+
+        // Animator: if not assigned in inspector, try to find one on this object or children
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (animator != null)
+        {
+            // keep animator in sync with physics updates for smoother motion-driven animation
+            animator.updateMode = AnimatorUpdateMode.Fixed;
+            animator.applyRootMotion = false;
+
+            // Only use Speed hash if the animator actually exposes that parameter
+            if (AnimatorHasParameter(animator, "Speed"))
+            {
+                speedHash = Animator.StringToHash("Speed");
+            }
+            else
+            {
+                speedHash = -1;
+#if UNITY_EDITOR
+                Debug.LogWarning($"Bat: Animator on '{gameObject.name}' does not have a 'Speed' parameter. Animation updates will be skipped.");
+#else
+                Debug.Log($"Bat: Animator missing 'Speed' parameter on {gameObject.name}.");
+#endif
+            }
+        }
+    }
+
+    private bool AnimatorHasParameter(Animator anim, string paramName)
+    {
+        if (anim == null) return false;
+        foreach (var p in anim.parameters)
+        {
+            if (p.name == paramName) return true;
+        }
+        return false;
     }
 
     private void Start()
@@ -144,6 +186,13 @@ public class Bat : MonoBehaviour
 
         // Forward velocity
         rb.linearVelocity = transform.forward * speed;
+
+        // Update animator parameter with current movement speed (if animator present and parameter exists)
+        if (animator != null && speedHash != -1)
+        {
+            float currentSpeed = rb.linearVelocity.magnitude;
+            animator.SetFloat(speedHash, currentSpeed);
+        }
 
         // Safety clamp: if physics pushed the bat below min height, correct position slightly
         if (transform.position.y < minFlightHeight - 0.25f)
