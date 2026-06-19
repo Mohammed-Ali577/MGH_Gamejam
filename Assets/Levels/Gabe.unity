@@ -437,6 +437,7 @@ MonoBehaviour:
   startSceneName: 
   pauseSceneName: 
   gameOverSceneName: 
+  winScore: 80
 --- !u!4 &413997870
 Transform:
   m_ObjectHideFlags: 0
@@ -1241,7 +1242,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6975220900670671233, guid: a2acb283d0f017747b361750477f0fe2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.81245
+      value: -97.4
       objectReference: {fileID: 0}
     - target: {fileID: 6975220900670671233, guid: a2acb283d0f017747b361750477f0fe2, type: 3}
       propertyPath: m_LocalPosition.y
