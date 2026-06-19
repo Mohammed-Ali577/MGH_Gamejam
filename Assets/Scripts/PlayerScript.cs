@@ -18,14 +18,18 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundMask;
+        [Tooltip("Only allow jumping when the collider under the player has this tag. Leave empty to allow any collider as ground.")]
+    [SerializeField] private string groundTag = "";
 
     [Header("Health")]
     [SerializeField] private int maxHealth = 3;
 
     private Rigidbody _rb;
+    private Collider _col;
     private Vector3 _moveInput;
     private bool _jumpRequested;
     private bool _isGrounded;
+    private bool _canJump;
     private float _pitch; // vertical look
 
     private int _currentHealth;
@@ -34,6 +38,8 @@ public class PlayerScript : MonoBehaviour
     void Start()
     {
         _rb = GetComponent<Rigidbody>();
+        _col = GetComponent<Collider>();
+
         // Use physics to move the player and avoid tipping over
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
         _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -52,6 +58,10 @@ public class PlayerScript : MonoBehaviour
 
         _currentHealth = Mathf.Max(1, maxHealth);
         _isDead = false;
+
+        // initialize jump availability based on initial grounded state
+        UpdateGroundStateImmediate();
+        _canJump = _isGrounded;
     }
 
     void Update()
@@ -79,14 +89,18 @@ public class PlayerScript : MonoBehaviour
         float vertical = Input.GetAxis("Vertical");
         _moveInput = new Vector3(horizontal, 0f, vertical);
 
-        // Ground check (uses groundCheck transform if assigned)
-        Vector3 checkPos = groundCheck != null ? groundCheck.position : transform.position;
-        _isGrounded = Physics.CheckSphere(checkPos, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
+        // update grounded state each frame
+        UpdateGroundStateImmediate();
 
-        // Jump request
-        if (Input.GetButtonDown("Jump") && _isGrounded)
+        // If grounded, allow the next jump
+        if (_isGrounded)
+            _canJump = true;
+
+        // Jump request - only when grounded and only registers on GetButtonDown and only if allowed (_canJump)
+        if (Input.GetButtonDown("Jump") && _isGrounded && _canJump)
         {
             _jumpRequested = true;
+            _canJump = false; // prevent further jumps until we touch ground again
         }
     }
 
@@ -104,11 +118,68 @@ public class PlayerScript : MonoBehaviour
         velocity.z = worldMove.z;
         _rb.linearVelocity = velocity;
 
-        // Handle jump in physics step
+        // Handle jump in physics step (only once per request)
         if (_jumpRequested)
         {
-            _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            // Double-check grounded before applying impulse to avoid edge cases
+            if (_isGrounded)
+            {
+                _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            }
             _jumpRequested = false;
+        }
+    }
+
+    // Performs a raycast + overlap checks and updates _isGrounded
+    private void UpdateGroundStateImmediate()
+    {
+        // Determine check position (groundCheck or fallback just below collider)
+        Vector3 checkPos;
+        if (groundCheck != null)
+        {
+            checkPos = groundCheck.position;
+        }
+        else if (_col != null)
+        {
+            checkPos = transform.position + Vector3.down * (_col.bounds.extents.y + 0.05f);
+        }
+        else
+        {
+            checkPos = transform.position + Vector3.down * 0.6f;
+        }
+
+        // Determine mask to use
+        int mask = (groundMask.value != 0) ? groundMask.value : Physics.DefaultRaycastLayers;
+
+        _isGrounded = false;
+
+        // Prefer a short raycast down
+        float rayDist = (_col != null) ? (_col.bounds.extents.y + 0.1f) : 0.6f;
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, rayDist + groundCheckRadius, mask, QueryTriggerInteraction.Ignore))
+        {
+            if (string.IsNullOrEmpty(groundTag) || hit.collider.CompareTag(groundTag))
+            {
+                _isGrounded = true;
+                return;
+            }
+        }
+
+        // Fallback to overlap sphere
+        Collider[] overlaps = Physics.OverlapSphere(checkPos, groundCheckRadius, mask, QueryTriggerInteraction.Ignore);
+        if (overlaps != null && overlaps.Length > 0)
+        {
+            foreach (var c in overlaps)
+            {
+                if (c == null)
+                    continue;
+                if (c == _col)
+                    continue;
+                if (string.IsNullOrEmpty(groundTag) || c.CompareTag(groundTag))
+                {
+                    _isGrounded = true;
+                    break;
+                }
+            }
         }
     }
 
@@ -152,11 +223,22 @@ public class PlayerScript : MonoBehaviour
     // Optional: visualize ground check sphere in the editor
     void OnDrawGizmosSelected()
     {
+        Vector3 checkPos;
         if (groundCheck != null)
         {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+            checkPos = groundCheck.position;
         }
+        else if (TryGetComponent<Collider>(out var c))
+        {
+            checkPos = transform.position + Vector3.down * (c.bounds.extents.y + 0.05f);
+        }
+        else
+        {
+            checkPos = transform.position + Vector3.down * 0.6f;
+        }
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(checkPos, groundCheckRadius);
     }
 
     // Read-only current health
