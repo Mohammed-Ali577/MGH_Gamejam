@@ -418,7 +418,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1001 &2935532746214478594
+--- !u!1001 &4531657561255338488
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -426,14 +426,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 436378802596325313, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
-      propertyPath: m_Resource
-      value: 
-      objectReference: {fileID: 8300000, guid: aa13903362e35174f8e0cf7fd38a6018, type: 3}
-    - target: {fileID: 436378802596325313, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
-      propertyPath: m_audioClip
-      value: 
-      objectReference: {fileID: 8300000, guid: aa13903362e35174f8e0cf7fd38a6018, type: 3}
+    - target: {fileID: 2036349551900480486, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4912891301622558781, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844320098422720144, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6019689274310750964, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7613909465404946533, guid: b4f41cf501916b1459e0fa844f2318e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 155.83502
@@ -490,4 +498,4 @@ SceneRoots:
   - {fileID: 482091684}
   - {fileID: 1836018963}
   - {fileID: 1707016491}
-  - {fileID: 2935532746214478594}
+  - {fileID: 4531657561255338488}
