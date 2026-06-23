@@ -5,11 +5,15 @@ TagManager:
   serializedVersion: 3
   tags:
   - Enemies
+  - Grave
+  - Ground
+  - 'graveTag '
+  - Projectile
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
   - 
