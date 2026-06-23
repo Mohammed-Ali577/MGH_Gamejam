@@ -6,11 +6,13 @@ TagManager:
   tags:
   - Grave
   - Ground
+  - 'graveTag '
+  - Projectile
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
   - 

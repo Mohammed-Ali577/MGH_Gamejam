@@ -274,7 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 2
-  enemyPrefab: {fileID: 919132149155446097, guid: 54b472f4f7d445442988b04c4d94c66d, type: 3}
+  enemyPrefab: {fileID: 4385299160490969403, guid: ecf44851704817a43bafee57c13f8112, type: 3}
   numberOfEnemies: 1
   spawnRadius: 20
   delayBetweenSpawns: 2
@@ -282,8 +282,14 @@ MonoBehaviour:
   spawnOnScreenClick: 0
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   destroyAfterSpawn: 0
+  destroyAfterDestroy: 0
+  failedClickColor: {r: 1, g: 1, b: 1, a: 1}
+  clicksToChangeColor: 2
+  spawnAtRandomGrave: 1
+  graveyardParent: {fileID: 0}
+  graveTag: 'graveTag '
   limitToOneSpawnPerObject: 1
   spawnChanceDenominator: 6
 --- !u!65 &2044002378498322115
@@ -305,8 +311,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.380006, y: 1.306462, z: 0.737924}
-  m_Center: {x: 0, y: 0.107548, z: 0.06049399}
+  m_Size: {x: 1.1294041, y: 1.6340402, z: 0.46244812}
+  m_Center: {x: -0.005560875, y: 0.2713371, z: 0.08839798}
 --- !u!1 &3231294076404062916
 GameObject:
   m_ObjectHideFlags: 0
@@ -786,7 +792,7 @@ GameObject:
   - component: {fileID: 1151177482800142729}
   m_Layer: 0
   m_Name: Grave_01
-  m_TagString: Untagged
+  m_TagString: 'graveTag '
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
