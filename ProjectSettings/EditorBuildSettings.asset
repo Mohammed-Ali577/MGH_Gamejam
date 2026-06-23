@@ -4,6 +4,12 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Levels/HarrisonW-MainMenu.unity
+    guid: 8464f481aea1e104e9eaf18e39fe8edd
+  - enabled: 1
+    path: Assets/Levels/Mohammed-Ali.unity
+    guid: c162504aa1a2e6346a389e2f9131bfc3
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
