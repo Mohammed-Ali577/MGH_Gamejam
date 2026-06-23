@@ -57,7 +57,6 @@ public class GameManager : MonoBehaviour
     // Keep the string names synced with dragged SceneAsset(s) while editing
     private void OnValidate()
     {
-        SyncSceneAssetToName(startSceneAsset, ref startSceneName);
         SyncSceneAssetToName(pauseSceneAsset, ref pauseSceneName);
         SyncSceneAssetToName(gameOverSceneAsset, ref gameOverSceneName);
     }
@@ -131,7 +130,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void EndGame()
+    // Made public so other objects (like Enemy collisions) can trigger the end sequence.
+    public void EndGame()
     {
         if (GameOver) return;
         GameOver = true;
