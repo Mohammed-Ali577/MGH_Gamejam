@@ -4,7 +4,7 @@ using System;
 /// <summary>
 /// Simple static score manager. Other systems (UI) can subscribe to OnScoreChanged to update visuals.
 /// </summary>
-public static class ScoreManager
+public static class ScoreManager01
 {
     public static int Score { get; private set; } = 0;
 

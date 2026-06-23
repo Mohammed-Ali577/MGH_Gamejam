@@ -7,7 +7,7 @@ using UnityEngine;
 /// - If the roll fails on the first hit the object is NOT deleted and subsequent clicks do nothing. (Collisions still apply normal damage after first attempt.)
 /// Spawns happen only on compass directions (N, E, S, W) relative to the spawn center.
 /// </summary>
-public class EnemySpawner : MonoBehaviour
+public class SpawnEnemiesOnHit : MonoBehaviour
 {
     [Header("Health")]
     [Tooltip("Number of hits required to destroy this obstacle (used after the first-hit spawn check).")]
